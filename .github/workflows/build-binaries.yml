@@ -223,13 +223,28 @@ jobs:
         run: |
           source openvino_2026/setupvars.sh
           mkdir -p dist
-            
-          staticx build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
-          staticx build/bin/whisper-server dist/whisper-server-linux-x64-openvino
-
+          
+          OV_LIB_DIR=openvino_2026/runtime/lib/intel64
+      
+          staticx \
+            --library $OV_LIB_DIR/libopenvino_ir_frontend.so \
+            --library $OV_LIB_DIR/libopenvino_onnx_frontend.so \
+            --library $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
+            --library $OV_LIB_DIR/libopenvino_auto_plugin.so \
+            --library $OV_LIB_DIR/libopenvino.so \
+            build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
+      
+          staticx \
+            --library $OV_LIB_DIR/libopenvino_ir_frontend.so \
+            --library $OV_LIB_DIR/libopenvino_onnx_frontend.so \
+            --library $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
+            --library $OV_LIB_DIR/libopenvino_auto_plugin.so \
+            --library $OV_LIB_DIR/libopenvino.so \
+            build/bin/whisper-server dist/whisper-server-linux-x64-openvino
+      
           chmod +x dist/whisper-cli-linux-x64-openvino
           chmod +x dist/whisper-server-linux-x64-openvino
-
+      
           cd dist
           zip whisper-cli-linux-x64-openvino.zip whisper-cli-linux-x64-openvino
           zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
