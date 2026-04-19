@@ -231,11 +231,8 @@ jobs:
       
           STATICX_LIBS="\
             -l $OV_LIB_DIR/libopenvino.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino.so.2610 \
             -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2610 \
             -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2610 \
             -l $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
             -l $OV_LIB_DIR/libopenvino_auto_plugin.so \
             -l $OV_LIB_DIR/libopenvino_auto_batch_plugin.so \
@@ -250,7 +247,7 @@ jobs:
           cd dist
           zip whisper-cli-linux-x64-openvino.zip whisper-cli-linux-x64-openvino
           zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
-
+ 
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
