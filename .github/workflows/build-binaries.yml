@@ -191,6 +191,7 @@ jobs:
       - name: Download OpenVINO
         run: |
           wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
+          mkdir -p openvino_2026
           tar -xzvf openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz --strip-components=1 -C openvino_2026
             
       - name: Set OpenVINO environment variables
