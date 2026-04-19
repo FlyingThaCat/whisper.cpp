@@ -7,223 +7,230 @@ on:
         description: 'Version tag for the release (e.g., v1.0.0)'
         required: true
         type: string
-  permissions:
-    contents: write
-  env:
-    # https://developer.nvidia.com/cuda/gpus
-    CUDA_ARCHITECTURES: "75;80;86;89;120;121"
+permissions:
+  contents: write
+env:
+  # https://developer.nvidia.com/cuda/gpus
+  CUDA_ARCHITECTURES: "75;80;86;89;120;121"
 
-  jobs:
-    build-linux-x64-cpu:
-      runs-on: ubuntu-22.04
-      steps:
-        - name: Free Disk Space (Ubuntu)
-          uses: jlumbroso/free-disk-space@main
-          with:
-            # this might remove tools that are actually needed,
-            # if set to "true" but frees about 6 GB
-            tool-cache: false
+jobs:
+  build-linux-x64-cpu:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
 
-            # all of these default to true, but feel free to set to
-            # "false" if necessary for your workflow
-            android: true
-            dotnet: true
-            haskell: true
-            large-packages: true
-            docker-images: true
-            swap-storage: true
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
         
-        - name: Checkout code
-          uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-        - name: Install dependencies
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y build-essential cmake
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
         
-        - name: Setup ccache
-          uses: hendrikmuhs/ccache-action@v1.2
-          with:
-            key: linux-x64-cpu
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-x64-cpu
 
-        - name: Build Whisper.cpp (CPU-only)
-          run: |
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DBUILD_SHARED_LIBS=0 \
-              -DWHISPER_COREML=0 \
-              -DGGML_CUDA=0
-            cmake --build build --config Release -j $(nproc)
+      - name: Build Whisper.cpp (CPU-only)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_SHARED_LIBS=0 \
+            -DWHISPER_COREML=0 \
+            -DGGML_CUDA=0
+          cmake --build build --config Release -j $(nproc)
 
-        - name: Package Binaries
-          run: |
-            mkdir -p dist
+      - name: Package Binaries
+        run: |
+          mkdir -p dist
             
-            cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-cpu
-            chmod +x dist/whisper-cpp-linux-x64-cpu
+          cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-cpu
+          chmod +x dist/whisper-cpp-linux-x64-cpu
 
-            cp build/bin/whisper-server dist/whisper-server-linux-x64-cpu
-            chmod +x dist/whisper-server-linux-x64-cpu
+          cp build/bin/whisper-server dist/whisper-server-linux-x64-cpu
+          chmod +x dist/whisper-server-linux-x64-cpu
 
-            cd dist
+          cd dist
 
-            zip whisper-cpp-linux-x64-cpu.zip whisper-cpp-linux-x64-cpu
-            zip whisper-server-linux-x64-cpu.zip whisper-server-linux-x64-cpu
+          zip whisper-cpp-linux-x64-cpu.zip whisper-cpp-linux-x64-cpu
+          zip whisper-server-linux-x64-cpu.zip whisper-server-linux-x64-cpu
 
-        - name: Upload whisper-cli artifact
-          uses: actions/upload-artifact@v7
-          with:
-            name: whisper-cpp-linux-x64-cpu
-            path: dist/whisper-cpp-linux-x64-cpu.zip
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-cpp-linux-x64-cpu
+          path: dist/whisper-cpp-linux-x64-cpu.zip
 
-        - name: Upload whisper-server artifact
-          uses: actions/upload-artifact@v7
-          with:
-            name: whisper-server-linux-x64-cpu
-            path: dist/whisper-server-linux-x64-cpu.zip
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-server-linux-x64-cpu
+          path: dist/whisper-server-linux-x64-cpu.zip
 
-    build-linux-x64-cuda:
-      runs-on: ubuntu-22.04
-      steps:
-        - name: Free Disk Space (Ubuntu)
-          uses: jlumbroso/free-disk-space@main
-          with:
-            # this might remove tools that are actually needed,
-            # if set to "true" but frees about 6 GB
-            tool-cache: false
+  build-linux-x64-cuda:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
 
-            # all of these default to true, but feel free to set to
-            # "false" if necessary for your workflow
-            android: true
-            dotnet: true
-            haskell: true
-            large-packages: true
-            docker-images: true
-            swap-storage: true
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
         
-        - name: Checkout code
-          uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-        - name: Install dependencies
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y build-essential cmake nvidia-cuda-toolkit
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake nvidia-cuda-toolkit
         
-        - name: Setup ccache
-          uses: hendrikmuhs/ccache-action@v1.2
-          with:
-            key: linux-x64-cuda
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-x64-cuda
 
-        - name: Build Whisper.cpp (CUDA)
-          run: |
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DBUILD_SHARED_LIBS=0 \
-              -DWHISPER_COREML=0 \
-              -DGGML_CUDA=1 \
-              -DCMAKE_CUDA_ARCHITECTURES=="${{ env.CUDA_ARCHITECTURES }}"
-            cmake --build build --config Release -j $(nproc)
+      - name: Build Whisper.cpp (CUDA)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_SHARED_LIBS=0 \
+            -DWHISPER_COREML=0 \
+            -DGGML_CUDA=1 \
+            -DCMAKE_CUDA_ARCHITECTURES=="${{ env.CUDA_ARCHITECTURES }}"
+          cmake --build build --config Release -j $(nproc)
 
-        - name: Package Binaries
-          run: |
-            mkdir -p dist
-            
-            cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-cuda
-            chmod +x dist/whisper-cpp-linux-x64-cuda
+      - name: Package Binaries
+        run: |
+          mkdir -p dist
+          
+          cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-cuda
+          chmod +x dist/whisper-cpp-linux-x64-cuda
 
-            cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda
-            chmod +x dist/whisper-server-linux-x64-cuda
+          cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda
+          chmod +x dist/whisper-server-linux-x64-cuda
 
-            cd dist
+          cd dist
 
-            zip whisper-cpp-linux-x64-cuda.zip whisper-cpp-linux-x64-cuda
-            zip whisper-server-linux-x64-cuda.zip whisper-server-linux-x64-cuda
+          zip whisper-cpp-linux-x64-cuda.zip whisper-cpp-linux-x64-cuda
+          zip whisper-server-linux-x64-cuda.zip whisper-server-linux-x64-cuda
 
-        - name: Upload whisper-cli artifact
-          uses: actions/upload-artifact@v7
-          with:
-            name: whisper-cpp-linux-x64
-            path: dist/whisper-cpp-linux-x64-cuda.zip
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-cpp-linux-x64
+          path: dist/whisper-cpp-linux-x64-cuda.zip
 
-        - name: Upload whisper-server artifact
-          uses: actions/upload-artifact@v7
-          with:
-            name: whisper-server-linux-x64
-            path: dist/whisper-server-linux-x64-cuda.zip
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-server-linux-x64
+          path: dist/whisper-server-linux-x64-cuda.zip
     
-    build-linux-x64-openvino:
-      runs-on: ubuntu-22.04
-      steps:
-        - name: Free Disk Space (Ubuntu)
-          uses: jlumbroso/free-disk-space@main
-          with:
-            # this might remove tools that are actually needed,
-            # if set to "true" but frees about 6 GB
-            tool-cache: false
+  build-linux-x64-openvino:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
 
-            # all of these default to true, but feel free to set to
-            # "false" if necessary for your workflow
-            android: true
-            dotnet: true
-            haskell: true
-            large-packages: true
-            docker-images: true
-            swap-storage: true
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+      
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies  
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ocl-icd-opencl-dev
         
-        - name: Checkout code
-          uses: actions/checkout@v6
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-x64-openvino
 
-        - name: Install dependencies  
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y build-essential cmake ocl-icd-opencl-dev
-        
-        - name: Setup ccache
-          uses: hendrikmuhs/ccache-action@v1.2
-          with:
-            key: linux-x64-openvino
-
-        # download https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
-        - name: Download OpenVINO
-          run: |
-            wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
-            tar -xzvf openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz --strip-components=1 -C openvino_2026
+      # download https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
+      - name: Download OpenVINO
+        run: |
+          wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
+          tar -xzvf openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz --strip-components=1 -C openvino_2026
             
-        - name: Set OpenVINO environment variables
-          run: |
-            source openvino_2026/setupvars.sh
+      - name: Set OpenVINO environment variables
+        run: |
+          source openvino_2026/setupvars.sh
 
-        - name: Build Whisper.cpp (OpenVINO)
-          run: |
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DBUILD_SHARED_LIBS=0 \
-              -DWHISPER_COREML=0 \
-              -DWHISPER_OPENVINO=1
-            cmake --build build --config Release -j $(nproc)
+      - name: Build Whisper.cpp (OpenVINO)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_SHARED_LIBS=0 \
+            -DWHISPER_COREML=0 \
+            -DWHISPER_OPENVINO=1
+          cmake --build build --config Release -j $(nproc)
 
-        - name: Package Binaries
-          run: |
-            mkdir -p dist
+      - name: Package Binaries
+        run: |
+          mkdir -p dist
             
-            cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-openvino
-            chmod +x dist/whisper-cpp-linux-x64-openvino
+          cp build/bin/whisper-cli dist/whisper-cpp-linux-x64-openvino
+          chmod +x dist/whisper-cpp-linux-x64-openvino
 
-            cp build/bin/whisper-server dist/whisper-server-linux-x64-openvino
-            chmod +x dist/whisper-server-linux-x64-openvino
+          cp build/bin/whisper-server dist/whisper-server-linux-x64-openvino
+          chmod +x dist/whisper-server-linux-x64-openvino
 
-            cd dist
+          cd dist
 
-            zip whisper-cpp-linux-x64-openvino.zip whisper-cpp-linux-x64-openvino
-            zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
+          zip whisper-cpp-linux-x64-openvino.zip whisper-cpp-linux-x64-openvino
+          zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
 
-        - name: Upload whisper-cli artifact
-          uses: actions/upload-artifact@v7
-          with:
-            name: whisper-cpp-linux
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-cpp-linux
+          path: dist/whisper-cpp-linux-x64-openvino.zip
+
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-server-linux
+          path: dist/whisper-server-linux-x64-openvino.zip
