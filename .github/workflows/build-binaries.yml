@@ -229,28 +229,20 @@ jobs:
           
           OV_LIB_DIR=openvino_2026/runtime/lib/intel64
       
-          # Create missing symlink
-          ln -sf $PWD/$OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 $OV_LIB_DIR/libopenvino_ir_frontend.so
-      
-          staticx \
+          STATICX_LIBS="\
+            -l $OV_LIB_DIR/libopenvino.so.2026.1.0 \
+            -l $OV_LIB_DIR/libopenvino.so.2610 \
             -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 \
             -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2610 \
             -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2026.1.0 \
+            -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2610 \
             -l $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
             -l $OV_LIB_DIR/libopenvino_auto_plugin.so \
-            -l $OV_LIB_DIR/libopenvino.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino.so.2610 \
-            build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
+            -l $OV_LIB_DIR/libopenvino_auto_batch_plugin.so \
+            -l $OV_LIB_DIR/libopenvino_hetero_plugin.so"
       
-          staticx \
-            -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2610 \
-            -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
-            -l $OV_LIB_DIR/libopenvino_auto_plugin.so \
-            -l $OV_LIB_DIR/libopenvino.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino.so.2610 \
-            build/bin/whisper-server dist/whisper-server-linux-x64-openvino
+          staticx $STATICX_LIBS build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
+          staticx $STATICX_LIBS build/bin/whisper-server dist/whisper-server-linux-x64-openvino
       
           chmod +x dist/whisper-cli-linux-x64-openvino
           chmod +x dist/whisper-server-linux-x64-openvino
