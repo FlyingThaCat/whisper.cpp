@@ -366,22 +366,29 @@ jobs:
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 
+      # upload the artifacts
+      - name: Upload Checkpoint
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-windows-x64-cuda-sm${{ matrix.cuda_arch }}
+          path: build\bin\Release\*.exe
+
       - name: Download CUDA runtime DLLs
         shell: pwsh
         run: |
           $CUDA_DOWNLOAD = "https://developer.download.nvidia.com/compute/cuda/redist"
 
-          curl -O "$CUDA_DOWNLOAD/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-13.2.75-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-13.2.51-archive.zip"
           curl -O "$CUDA_DOWNLOAD/libcublas/windows-x86_64/libcublas-windows-x86_64-13.2.1.1-archive.zip"
 
-          Expand-Archive cuda_cudart-windows-x86_64-13.2.75-archive.zip -DestinationPath cuda_cudart
+          Expand-Archive cuda_cudart-windows-x86_64-13.2.51-archive.zip -DestinationPath cuda_cudart
           Expand-Archive libcublas-windows-x86_64-13.2.1.1-archive.zip -DestinationPath libcublas
 
           # Stage DLLs to a known location
           New-Item -ItemType Directory -Force -Path cuda_dlls
-          Copy-Item cuda_cudart\bin\cudart64_13.dll cuda_dlls\
-          Copy-Item libcublas\bin\cublas64_13.dll   cuda_dlls\
-          Copy-Item libcublas\bin\cublasLt64_13.dll cuda_dlls\
+          Copy-Item cuda_cudart\bin\x64\cudart64_13.dll cuda_dlls\
+          Copy-Item libcublas\bin\x64\cublas64_13.dll   cuda_dlls\
+          Copy-Item libcublas\bin\x64\cublasLt64_13.dll cuda_dlls\
 
           Write-Host "Staged DLLs:"
           Get-ChildItem cuda_dlls | Format-Table Name, Length
@@ -391,19 +398,19 @@ jobs:
         run: |
           $arch = "${{ matrix.cuda_arch }}"
           mkdir dist
-      
+
           Copy-Item build\bin\Release\whisper-cli.exe    dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
           Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
           Copy-Item cuda_dlls\cudart64_13.dll   dist\
           Copy-Item cuda_dlls\cublas64_13.dll   dist\
           Copy-Item cuda_dlls\cublasLt64_13.dll dist\
-      
+
           Set-Location dist
           $dlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
-          
+
           $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $dlls
           Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
-          
+
           $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $dlls
           Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
 
