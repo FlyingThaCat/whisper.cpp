@@ -230,7 +230,6 @@ jobs:
           OV_LIB_DIR=openvino_2026/runtime/lib/intel64
       
           STATICX_LIBS="\
-            -l $OV_LIB_DIR/libopenvino.so.2026.1.0 \
             -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 \
             -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2026.1.0 \
             -l $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
