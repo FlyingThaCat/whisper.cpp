@@ -86,42 +86,39 @@ jobs:
 
   build-linux-x64-cuda:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        cuda_arch: ["75", "80", "86", "89", "120", "121"]
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
           large-packages: true
           docker-images: true
           swap-storage: true
-        
+  
       - name: Checkout code
         uses: actions/checkout@v6
-
+  
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
-        
+  
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: linux-x64-cuda
-
+          key: linux-x64-cuda-${{ matrix.cuda_arch }}
+  
       - uses: Jimver/cuda-toolkit@v0.2.35
-        id: cuda-toolkit
         with:
           cuda: '13.2.0'
-
-      - name: Build Whisper.cpp (CUDA)
+  
+      - name: Build Whisper.cpp (CUDA sm_${{ matrix.cuda_arch }})
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -130,41 +127,37 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF \
             -DWHISPER_COREML=OFF \
             -DGGML_CUDA=ON \
-            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCHITECTURES }}"
+            -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}"
           cmake --build build --config Release -j $(nproc)
-
+  
       - name: Package Binaries
         run: |
           mkdir -p dist
-          
-          cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cuda
-          chmod +x dist/whisper-cli-linux-x64-cuda
-
-          cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda
-          chmod +x dist/whisper-server-linux-x64-cuda
-
+          cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          chmod +x dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          chmod +x dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
           cd dist
-
-          zip whisper-cli-linux-x64-cuda.zip whisper-cli-linux-x64-cuda
-          zip whisper-server-linux-x64-cuda.zip whisper-server-linux-x64-cuda
-
+          zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
-          name: whisper-cli-linux-x64
-          path: dist/whisper-cli-linux-x64-cuda.zip
-
+          name: whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          path: dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+  
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
-          name: whisper-server-linux-x64
-          path: dist/whisper-server-linux-x64-cuda.zip
+          name: whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+          path: dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
     
   build-macos-arm64:
     runs-on: macos-14
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -321,6 +314,9 @@ jobs:
 
   build-windows-x64-cuda:
     runs-on: windows-2022
+    strategy:
+      matrix:
+        cuda_arch: ["75", "80", "86", "89", "120", "121"]
     steps:
       - name: Free up disk space
         shell: pwsh
@@ -395,7 +391,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
-          key: windows-x64-cuda
+          key: windows-x64-cuda-${{ matrix.cuda_arch }}
           variant: sccache
 
       - name: Build whisper.cpp with CUDA
@@ -408,7 +404,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF ^
             -DGGML_NATIVE=OFF ^
             -DGGML_CUDA=ON ^
-            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCHITECTURES }}" ^
+            -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}" ^
             -DCMAKE_CUDA_FLAGS="--use-local-env" ^
             -DCMAKE_CUDA_HOST_COMPILER="cl.exe" ^
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
@@ -422,12 +418,13 @@ jobs:
       - name: Package binaries with CUDA DLLs
         shell: pwsh
         run: |
+          $arch = "${{ matrix.cuda_arch }}"
           $CUDA_PATH = $env:CUDA_PATH
           mkdir dist
 
           # Copy main binaries
-          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cuda.exe
-          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda.exe
+          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
+          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
 
           # Required CUDA runtime DLLs for GPU acceleration
           $cudaDlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
@@ -455,20 +452,19 @@ jobs:
 
           # Create zip archives with dynamically built file lists
           Set-Location dist
-          $cliFiles = @("whisper-cli-win32-x64-cuda.exe") + $bundledDlls
-          $serverFiles = @("whisper-server-win32-x64-cuda.exe") + $bundledDlls
+          $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $cudaDlls
+          Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
+          $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $cudaDlls
+          Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
 
-          Compress-Archive -Path $cliFiles -DestinationPath whisper-cli-win32-x64-cuda.zip
-          Compress-Archive -Path $serverFiles -DestinationPath whisper-server-win32-x64-cuda.zip
-
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
         with:
-          name: whisper-cli-win32-x64-cuda
-          path: dist/whisper-cli-win32-x64-cuda.zip
+          name: whisper-cli-win32-x64-cuda-sm${{ matrix.cuda_arch }}
+          path: dist/whisper-cli-win32-x64-cuda-sm${{ matrix.cuda_arch }}.zip
 
       - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: whisper-server-win32-x64-cuda
-          path: dist/whisper-server-win32-x64-cuda.zip
+          name: whisper-server-win32-x64-cuda-sm${{ matrix.cuda_arch }}
+          path: dist/whisper-server-win32-x64-cuda-sm${{ matrix.cuda_arch }}.zip
