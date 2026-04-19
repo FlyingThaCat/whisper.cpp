@@ -366,51 +366,48 @@ jobs:
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 
-      - name: List dll
+      - name: List CUDA DLLs
         shell: pwsh
         run: |
-          Get-ChildItem build\bin\Release\*.dll | Format-Table Name, Length  
+          Get-ChildItem "$env:CUDA_PATH\bin\*.dll" | Format-Table Name, Length
 
       - name: Package binaries with CUDA DLLs
         shell: pwsh
         run: |
           $arch = "${{ matrix.cuda_arch }}"
           $CUDA_PATH = $env:CUDA_PATH
+          Write-Host "CUDA_PATH = $CUDA_PATH"
+          Write-Host "DLLs found:"
+          Get-ChildItem "$CUDA_PATH\bin\cuda*.dll", "$CUDA_PATH\bin\cublas*.dll" -ErrorAction SilentlyContinue | Format-Table Name
+      
           mkdir dist
-
-          # Copy main binaries
           Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
           Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
-
-          # Required CUDA runtime DLLs for GPU acceleration
-          $cudaDlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
+      
+          # Find DLLs dynamically instead of hardcoding names
           $bundledDlls = @()
-
-          foreach ($dll in $cudaDlls) {
-            $dllPath = Join-Path $CUDA_PATH "bin\$dll"
-            if (Test-Path $dllPath) {
-              Write-Host "Bundling $dll"
-              Copy-Item $dllPath dist\
-              $bundledDlls += $dll
+          $dllPatterns = @("cudart64_*.dll", "cublas64_*.dll", "cublasLt64_*.dll")
+      
+          foreach ($pattern in $dllPatterns) {
+            $found = Get-ChildItem "$CUDA_PATH\bin\$pattern" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) {
+              Write-Host "Bundling $($found.Name)"
+              Copy-Item $found.FullName dist\
+              $bundledDlls += $found.Name
             } else {
-              Write-Host "Warning: $dll not found at $dllPath"
+              Write-Host "Warning: No DLL matching $pattern found"
             }
           }
-
-          Write-Host "Contents of dist folder:"
-          Get-ChildItem dist | Format-Table Name, Length
-
-          # Fail if no CUDA DLLs were bundled
+      
           if ($bundledDlls.Count -eq 0) {
             Write-Error "No CUDA DLLs were bundled. Build failed."
             exit 1
           }
-
-          # Create zip archives with dynamically built file lists
+      
           Set-Location dist
-          $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $cudaDlls
+          $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $bundledDlls
           Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
-          $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $cudaDlls
+          $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $bundledDlls
           Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
 
       - name: Upload artifacts
