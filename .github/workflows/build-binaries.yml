@@ -366,48 +366,45 @@ jobs:
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 
-      - name: List CUDA DLLs
+      - name: Download CUDA runtime DLLs
         shell: pwsh
         run: |
-          Get-ChildItem "$env:CUDA_PATH\bin\*.dll" | Format-Table Name, Length
+          $CUDA_DOWNLOAD = "https://developer.download.nvidia.com/compute/cuda/redist"
+
+          curl -O "$CUDA_DOWNLOAD/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-13.2.75-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/libcublas/windows-x86_64/libcublas-windows-x86_64-13.2.1.1-archive.zip"
+
+          Expand-Archive cuda_cudart-windows-x86_64-13.2.75-archive.zip -DestinationPath cuda_cudart
+          Expand-Archive libcublas-windows-x86_64-13.2.1.1-archive.zip -DestinationPath libcublas
+
+          # Stage DLLs to a known location
+          New-Item -ItemType Directory -Force -Path cuda_dlls
+          Copy-Item cuda_cudart\bin\cudart64_13.dll cuda_dlls\
+          Copy-Item libcublas\bin\cublas64_13.dll   cuda_dlls\
+          Copy-Item libcublas\bin\cublasLt64_13.dll cuda_dlls\
+
+          Write-Host "Staged DLLs:"
+          Get-ChildItem cuda_dlls | Format-Table Name, Length
 
       - name: Package binaries with CUDA DLLs
         shell: pwsh
         run: |
           $arch = "${{ matrix.cuda_arch }}"
-          $CUDA_PATH = $env:CUDA_PATH
-          Write-Host "CUDA_PATH = $CUDA_PATH"
-          Write-Host "DLLs found:"
-          Get-ChildItem "$CUDA_PATH\bin\cuda*.dll", "$CUDA_PATH\bin\cublas*.dll" -ErrorAction SilentlyContinue | Format-Table Name
-      
           mkdir dist
-          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
+      
+          Copy-Item build\bin\Release\whisper-cli.exe    dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
           Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
-      
-          # Find DLLs dynamically instead of hardcoding names
-          $bundledDlls = @()
-          $dllPatterns = @("cudart64_*.dll", "cublas64_*.dll", "cublasLt64_*.dll")
-      
-          foreach ($pattern in $dllPatterns) {
-            $found = Get-ChildItem "$CUDA_PATH\bin\$pattern" -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($found) {
-              Write-Host "Bundling $($found.Name)"
-              Copy-Item $found.FullName dist\
-              $bundledDlls += $found.Name
-            } else {
-              Write-Host "Warning: No DLL matching $pattern found"
-            }
-          }
-      
-          if ($bundledDlls.Count -eq 0) {
-            Write-Error "No CUDA DLLs were bundled. Build failed."
-            exit 1
-          }
+          Copy-Item cuda_dlls\cudart64_13.dll   dist\
+          Copy-Item cuda_dlls\cublas64_13.dll   dist\
+          Copy-Item cuda_dlls\cublasLt64_13.dll dist\
       
           Set-Location dist
-          $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $bundledDlls
+          $dlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
+          
+          $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $dlls
           Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
-          $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $bundledDlls
+          
+          $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $dlls
           Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
 
       - name: Upload artifacts
