@@ -11,7 +11,7 @@ permissions:
   contents: write
 env:
   # https://developer.nvidia.com/cuda/gpus
-  CUDA_ARCHITECTURES: "75;80;86;89;120;121"
+  CUDA_ARCHITECTURES: "75;80;86;89;120-real"
 
 jobs:
   build-linux-x64-cpu:
