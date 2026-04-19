@@ -160,101 +160,315 @@ jobs:
           name: whisper-server-linux-x64
           path: dist/whisper-server-linux-x64-cuda.zip
     
-  build-linux-x64-openvino:
-    runs-on: ubuntu-22.04
+  build-macos-arm64:
+    runs-on: macos-14
     steps:
-      # - name: Free Disk Space (Ubuntu)
-      #   uses: jlumbroso/free-disk-space@main
-      #   with:
-      #     # this might remove tools that are actually needed,
-      #     # if set to "true" but frees about 6 GB
-      #     tool-cache: false
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      #     # all of these default to true, but feel free to set to
-      #     # "false" if necessary for your workflow
-      #     android: true
-      #     dotnet: true
-      #     haskell: true
-      #     large-packages: true
-      #     docker-images: true
-      #     swap-storage: true
-      
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install dependencies  
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ocl-icd-opencl-dev patchelf
-        
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: linux-x64-openvino
+          key: macos-arm64
 
-      # download https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
-      - name: Download OpenVINO
+      - name: Build whisper.cpp
         run: |
-          wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz
-          mkdir -p openvino_2026
-          tar -xzvf openvino_toolkit_ubuntu22_2026.1.0.21367.63e31528c62_x86_64.tgz --strip-components=1 -C openvino_2026
-            
-      - name: Install staticx
-        run: pip install staticx
-
-      - name: Set OpenVINO environment variables
-        run: |
-          source openvino_2026/setupvars.sh
-
-      - name: Build Whisper.cpp (OpenVINO)
-        run: |
-          source openvino_2026/setupvars.sh
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DWHISPER_COREML=OFF \
-            -DWHISPER_OPENVINO=ON \
-            -DENABLE_OV_IR_FRONTEND=y
-          cmake --build build --config Release -j $(nproc)
+            -DWHISPER_COREML=1 \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
 
-      - name: List OpenVINO libs
-        run: ls openvino_2026/runtime/lib/intel64/
-
-      - name: Package Binaries
+      - name: Package binaries
         run: |
-          source openvino_2026/setupvars.sh
           mkdir -p dist
+
+          cp build/bin/whisper-cli dist/whisper-cli-darwin-arm64
+          cp build/bin/whisper-server dist/whisper-server-darwin-arm64
           
-          OV_LIB_DIR=openvino_2026/runtime/lib/intel64
-      
-          STATICX_LIBS="\
-            -l $OV_LIB_DIR/libopenvino_ir_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_onnx_frontend.so.2026.1.0 \
-            -l $OV_LIB_DIR/libopenvino_intel_cpu_plugin.so \
-            -l $OV_LIB_DIR/libopenvino_auto_plugin.so \
-            -l $OV_LIB_DIR/libopenvino_auto_batch_plugin.so \
-            -l $OV_LIB_DIR/libopenvino_hetero_plugin.so"
-      
-          staticx $STATICX_LIBS build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
-          staticx $STATICX_LIBS build/bin/whisper-server dist/whisper-server-linux-x64-openvino
-      
-          chmod +x dist/whisper-cli-linux-x64-openvino
-          chmod +x dist/whisper-server-linux-x64-openvino
-      
+          chmod +x dist/whisper-cli-darwin-arm64
+          chmod +x dist/whisper-server-darwin-arm64
+          
           cd dist
-          zip whisper-cli-linux-x64-openvino.zip whisper-cli-linux-x64-openvino
-          zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
- 
+          zip whisper-cli-darwin-arm64.zip whisper-cli-darwin-arm64
+          zip whisper-server-darwin-arm64.zip whisper-server-darwin-arm64
+
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
-          name: whisper-cli-linux-x64-openvino
-          path: dist/whisper-cli-linux-x64-openvino.zip
+          name: whisper-cli-darwin-arm64
+          path: dist/whisper-cli-darwin-arm64.zip
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
-          name: whisper-server-linux-x64-openvino
-          path: dist/whisper-server-linux-x64-openvino.zip
+          name: whisper-server-darwin-arm64
+          path: dist/whisper-server-darwin-arm64.zip
+
+  build-macos-x64:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos-x64
+
+      - name: Build whisper.cpp for x64
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+            -DWHISPER_COREML=1 \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
+
+      - name: Package binaries
+        run: |
+          mkdir -p dist
+
+          cp build/bin/whisper-cli dist/whisper-cli-darwin-x64
+          cp build/bin/whisper-server dist/whisper-server-darwin-x64
+          
+          chmod +x dist/whisper-cli-darwin-x64
+          chmod +x dist/whisper-server-darwin-x64
+          
+          cd dist
+          zip whisper-cli-darwin-x64.zip whisper-cli-darwin-x64
+          zip whisper-server-darwin-x64.zip whisper-server-darwin-x64
+
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-cli-darwin-x64
+          path: dist/whisper-cli-darwin-x64.zip
+
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-server-darwin-x64
+          path: dist/whisper-server-darwin-x64.zip
+
+  build-windows-x64-cpu:
+    runs-on: windows-2022
+    steps:
+      - name: Free up disk space
+        shell: pwsh
+        run: |
+          # Remove unnecessary tools to free up disk space
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\CodeQL" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\Java*" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\go" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\Python" -ErrorAction SilentlyContinue
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: windows-x64-cpu
+          variant: sccache
+
+      - name: Build whisper.cpp (CPU-only)
+        shell: cmd
+        run: |
+          cmake -S . -B build -G "Ninja Multi-Config" ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
+            -DBUILD_SHARED_LIBS=OFF ^
+            -DWHISPER_COREML=OFF ^
+            -DGGML_CUDA=OFF ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
+
+      - name: Package binaries
+        shell: pwsh
+        run: |
+          mkdir dist
+
+          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cpu.exe
+          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cpu.exe
+          
+          Set-Location dist
+          Compress-Archive -Path whisper-cli-win32-x64-cpu.exe -DestinationPath whisper-cli-win32-x64-cpu.zip
+          Compress-Archive -Path whisper-server-win32-x64-cpu.exe -DestinationPath whisper-server-win32-x64-cpu.zip
+
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-cli-win32-x64-cpu
+          path: dist/whisper-cli-win32-x64-cpu.zip
+
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisper-server-win32-x64-cpu
+          path: dist/whisper-server-win32-x64-cpu.zip
+
+  build-windows-x64-cuda:
+    runs-on: windows-2022
+    steps:
+      - name: Free up disk space
+        shell: pwsh
+        run: |
+          # Remove unnecessary tools to free up disk space
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\CodeQL" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\Java*" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\go" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\hostedtoolcache\Python" -ErrorAction SilentlyContinue
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Install CUDA Toolkit 13.2.0
+        run: |
+          $CUDA_VERSION = "13.2.0"
+          $CUDA_TOOLKIT_DIR = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$CUDA_VERSION"
+          $CUDA_DOWNLOAD = "https://developer.download.nvidia.com/compute/cuda/redist"
+
+          # Component versions for CUDA 13.2.0
+          $CUDART_VER   = "13.2.75"
+          $NVCC_VER     = "13.2.78"
+          $NVRTC_VER    = "13.2.78"
+          $CUBLAS_VER   = "13.2.1.1"
+          $NVTX_VER     = "13.2.75"
+          $PROFILER_VER = "13.2.75"
+          $VS_VER       = "13.2.75"
+          $CCCL_VER     = "13.2.75"
+
+          # Create CUDA toolkit directory
+          New-Item -ItemType Directory -Force -Path $CUDA_TOOLKIT_DIR
+
+          # Install unzip
+          choco install unzip -y
+
+          # Download CUDA components from official NVIDIA CDN
+          curl -O "$CUDA_DOWNLOAD/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-${CUDART_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-${NVCC_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_nvrtc/windows-x86_64/cuda_nvrtc-windows-x86_64-${NVRTC_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/libcublas/windows-x86_64/libcublas-windows-x86_64-${CUBLAS_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_nvtx/windows-x86_64/cuda_nvtx-windows-x86_64-${NVTX_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_profiler_api/windows-x86_64/cuda_profiler_api-windows-x86_64-${PROFILER_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/visual_studio_integration/windows-x86_64/visual_studio_integration-windows-x86_64-${VS_VER}-archive.zip"
+          curl -O "$CUDA_DOWNLOAD/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-${CCCL_VER}-archive.zip"
+
+          # Extract all components
+          unzip -q '*.zip' -d $CUDA_TOOLKIT_DIR
+
+          # Copy extracted files to CUDA toolkit directory
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_cudart-windows-x86_64-${CUDART_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_nvcc-windows-x86_64-${NVCC_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_nvrtc-windows-x86_64-${NVRTC_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\libcublas-windows-x86_64-${CUBLAS_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_nvtx-windows-x86_64-${NVTX_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_profiler_api-windows-x86_64-${PROFILER_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\cuda_cccl-windows-x86_64-${CCCL_VER}-archive\*" "$CUDA_TOOLKIT_DIR" /E /I /H /Y
+          xcopy "$CUDA_TOOLKIT_DIR\visual_studio_integration-windows-x86_64-${VS_VER}-archive\visual_studio_integration\MSBuildExtensions\*" "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations" /E /I /H /Y
+
+          # Set environment variables
+          echo "$CUDA_TOOLKIT_DIR\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "CUDA_PATH=$CUDA_TOOLKIT_DIR" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Verify CUDA installation
+        run: nvcc --version
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: windows-x64-cuda
+          variant: sccache
+
+      - name: Build whisper.cpp with CUDA
+        shell: cmd
+        run: |
+          cmake -S . -B build -G "Ninja Multi-Config" ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
+            -DBUILD_SHARED_LIBS=OFF ^
+            -DGGML_NATIVE=OFF ^
+            -DGGML_CUDA=ON ^
+            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCHITECTURES }}" ^
+            -DCMAKE_CUDA_FLAGS="--use-local-env" ^
+            -DCMAKE_CUDA_HOST_COMPILER="cl.exe" ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
+
+      - name: List dll
+        shell: pwsh
+        run: |
+          Get-ChildItem build\bin\Release\*.dll | Format-Table Name, Length  
+
+      - name: Package binaries with CUDA DLLs
+        shell: pwsh
+        run: |
+          $CUDA_PATH = $env:CUDA_PATH
+          mkdir dist
+
+          # Copy main binaries
+          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cuda.exe
+          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda.exe
+
+          # Required CUDA runtime DLLs for GPU acceleration
+          $cudaDlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
+          $bundledDlls = @()
+
+          foreach ($dll in $cudaDlls) {
+            $dllPath = Join-Path $CUDA_PATH "bin\$dll"
+            if (Test-Path $dllPath) {
+              Write-Host "Bundling $dll"
+              Copy-Item $dllPath dist\
+              $bundledDlls += $dll
+            } else {
+              Write-Host "Warning: $dll not found at $dllPath"
+            }
+          }
+
+          Write-Host "Contents of dist folder:"
+          Get-ChildItem dist | Format-Table Name, Length
+
+          # Fail if no CUDA DLLs were bundled
+          if ($bundledDlls.Count -eq 0) {
+            Write-Error "No CUDA DLLs were bundled. Build failed."
+            exit 1
+          }
+
+          # Create zip archives with dynamically built file lists
+          Set-Location dist
+          $cliFiles = @("whisper-cli-win32-x64-cuda.exe") + $bundledDlls
+          $serverFiles = @("whisper-server-win32-x64-cuda.exe") + $bundledDlls
+
+          Compress-Archive -Path $cliFiles -DestinationPath whisper-cli-win32-x64-cuda.zip
+          Compress-Archive -Path $serverFiles -DestinationPath whisper-server-win32-x64-cuda.zip
+
+      - name: Upload whisper-cli artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-cli-win32-x64-cuda
+          path: dist/whisper-cli-win32-x64-cuda.zip
+
+      - name: Upload whisper-server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-server-win32-x64-cuda
+          path: dist/whisper-server-win32-x64-cuda.zip
