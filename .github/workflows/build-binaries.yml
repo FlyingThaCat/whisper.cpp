@@ -215,7 +215,8 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DBUILD_SHARED_LIBS=OFF \
             -DWHISPER_COREML=OFF \
-            -DWHISPER_OPENVINO=ON
+            -DWHISPER_OPENVINO=ON \
+            -DENABLE_OV_IR_FRONTEND=y
           cmake --build build --config Release -j $(nproc)
 
       - name: Package Binaries
