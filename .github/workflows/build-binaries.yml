@@ -11,7 +11,7 @@ permissions:
   contents: write
 env:
   # https://developer.nvidia.com/cuda/gpus
-  CUDA_ARCHITECTURES: "75;80;86;89;120-real"
+  CUDA_ARCHITECTURES: "75;80;86;89;120;121"
 
 jobs:
   build-linux-x64-cpu:
@@ -125,7 +125,7 @@ jobs:
             -DBUILD_SHARED_LIBS=0 \
             -DWHISPER_COREML=0 \
             -DGGML_CUDA=1 \
-            -DCMAKE_CUDA_ARCHITECTURES=="${{ env.CUDA_ARCHITECTURES }}"
+            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCHITECTURES }}"
           cmake --build build --config Release -j $(nproc)
 
       - name: Package Binaries
@@ -200,6 +200,7 @@ jobs:
 
       - name: Build Whisper.cpp (OpenVINO)
         run: |
+          source openvino_2026/setupvars.sh
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
