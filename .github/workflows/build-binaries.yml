@@ -223,12 +223,12 @@ jobs:
           source openvino_2026/setupvars.sh
           mkdir -p dist
             
-          staticx build/bin/whisper-cli dist/whisper-cpp-linux-x64-openvino
+          staticx build/bin/whisper-cli dist/whisper-cli-linux-x64-openvino
           staticx build/bin/whisper-server dist/whisper-server-linux-x64-openvino
 
-          chmod +x dist/whisper-cpp-linux-x64-openvino
+          chmod +x dist/whisper-cli-linux-x64-openvino
           chmod +x dist/whisper-server-linux-x64-openvino
-          
+
           cd dist
           zip whisper-cli-linux-x64-openvino.zip whisper-cli-linux-x64-openvino
           zip whisper-server-linux-x64-openvino.zip whisper-server-linux-x64-openvino
