@@ -317,7 +317,8 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        cuda_arch: ["75", "80", "86", "89", "120", "121"]
+        # cuda_arch: ["75", "80", "86", "89", "120", "121"]
+        cuda_arch: ["80"]
     steps:
       - name: Free up disk space
         shell: pwsh
