@@ -14,311 +14,311 @@ env:
   CUDA_ARCHITECTURES: "75;80;86;89;120;121"
 
 jobs:
-  build-linux-x64-cpu:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
-          tool-cache: false
+  # build-linux-x64-cpu:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Free Disk Space (Ubuntu)
+  #       uses: jlumbroso/free-disk-space@main
+  #       with:
+  #         # this might remove tools that are actually needed,
+  #         # if set to "true" but frees about 6 GB
+  #         tool-cache: false
 
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+  #         # all of these default to true, but feel free to set to
+  #         # "false" if necessary for your workflow
+  #         android: true
+  #         dotnet: true
+  #         haskell: true
+  #         large-packages: true
+  #         docker-images: true
+  #         swap-storage: true
         
-      - name: Checkout code
-        uses: actions/checkout@v6
+  #     - name: Checkout code
+  #       uses: actions/checkout@v6
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y build-essential cmake
         
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: linux-x64-cpu
+  #     - name: Setup ccache
+  #       uses: hendrikmuhs/ccache-action@v1.2
+  #       with:
+  #         key: linux-x64-cpu
 
-      - name: Build Whisper.cpp (CPU-only)
-        run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DWHISPER_COREML=OFF \
-            -DGGML_CUDA=OFF
-          cmake --build build --config Release -j $(nproc)
+  #     - name: Build Whisper.cpp (CPU-only)
+  #       run: |
+  #         cmake -B build \
+  #           -DCMAKE_BUILD_TYPE=Release \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+  #           -DBUILD_SHARED_LIBS=OFF \
+  #           -DWHISPER_COREML=OFF \
+  #           -DGGML_CUDA=OFF
+  #         cmake --build build --config Release -j $(nproc)
 
-      - name: Package Binaries
-        run: |
-          mkdir -p dist
+  #     - name: Package Binaries
+  #       run: |
+  #         mkdir -p dist
             
-          cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cpu
-          chmod +x dist/whisper-cli-linux-x64-cpu
+  #         cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cpu
+  #         chmod +x dist/whisper-cli-linux-x64-cpu
 
-          cp build/bin/whisper-server dist/whisper-server-linux-x64-cpu
-          chmod +x dist/whisper-server-linux-x64-cpu
+  #         cp build/bin/whisper-server dist/whisper-server-linux-x64-cpu
+  #         chmod +x dist/whisper-server-linux-x64-cpu
 
-          cd dist
+  #         cd dist
 
-          zip whisper-cli-linux-x64-cpu.zip whisper-cli-linux-x64-cpu
-          zip whisper-server-linux-x64-cpu.zip whisper-server-linux-x64-cpu
+  #         zip whisper-cli-linux-x64-cpu.zip whisper-cli-linux-x64-cpu
+  #         zip whisper-server-linux-x64-cpu.zip whisper-server-linux-x64-cpu
 
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-cli-linux-x64-cpu
-          path: dist/whisper-cli-linux-x64-cpu.zip
+  #     - name: Upload whisper-cli artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-cli-linux-x64-cpu
+  #         path: dist/whisper-cli-linux-x64-cpu.zip
 
-      - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-server-linux-x64-cpu
-          path: dist/whisper-server-linux-x64-cpu.zip
+  #     - name: Upload whisper-server artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-server-linux-x64-cpu
+  #         path: dist/whisper-server-linux-x64-cpu.zip
 
-  build-linux-x64-cuda:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        cuda_arch: ["75", "80", "86", "89", "120", "121"]
-    steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+  # build-linux-x64-cuda:
+  #   runs-on: ubuntu-22.04
+  #   strategy:
+  #     matrix:
+  #       cuda_arch: ["75", "80", "86", "89", "120", "121"]
+  #   steps:
+  #     - name: Free Disk Space (Ubuntu)
+  #       uses: jlumbroso/free-disk-space@main
+  #       with:
+  #         tool-cache: false
+  #         android: true
+  #         dotnet: true
+  #         haskell: true
+  #         large-packages: true
+  #         docker-images: true
+  #         swap-storage: true
   
-      - name: Checkout code
-        uses: actions/checkout@v6
+  #     - name: Checkout code
+  #       uses: actions/checkout@v6
   
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y build-essential cmake
   
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: linux-x64-cuda-${{ matrix.cuda_arch }}
+  #     - name: Setup ccache
+  #       uses: hendrikmuhs/ccache-action@v1.2
+  #       with:
+  #         key: linux-x64-cuda-${{ matrix.cuda_arch }}
   
-      - uses: Jimver/cuda-toolkit@v0.2.35
-        with:
-          cuda: '13.2.0'
+  #     - uses: Jimver/cuda-toolkit@v0.2.35
+  #       with:
+  #         cuda: '13.2.0'
   
-      - name: Build Whisper.cpp (CUDA sm_${{ matrix.cuda_arch }})
-        run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DWHISPER_COREML=OFF \
-            -DGGML_CUDA=ON \
-            -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}"
-          cmake --build build --config Release -j $(nproc)
+  #     - name: Build Whisper.cpp (CUDA sm_${{ matrix.cuda_arch }})
+  #       run: |
+  #         cmake -B build \
+  #           -DCMAKE_BUILD_TYPE=Release \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+  #           -DBUILD_SHARED_LIBS=OFF \
+  #           -DWHISPER_COREML=OFF \
+  #           -DGGML_CUDA=ON \
+  #           -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}"
+  #         cmake --build build --config Release -j $(nproc)
   
-      - name: Package Binaries
-        run: |
-          mkdir -p dist
-          cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          chmod +x dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          chmod +x dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          cd dist
-          zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #     - name: Package Binaries
+  #       run: |
+  #         mkdir -p dist
+  #         cp build/bin/whisper-cli dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         chmod +x dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         chmod +x dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         cd dist
+  #         zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
   
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+  #     - name: Upload whisper-cli artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         path: dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
   
-      - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+  #     - name: Upload whisper-server artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
+  #         path: dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
     
-  build-macos-arm64:
-    runs-on: macos-14
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  # build-macos-arm64:
+  #   runs-on: macos-14
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: macos-arm64
+  #     - name: Setup ccache
+  #       uses: hendrikmuhs/ccache-action@v1.2
+  #       with:
+  #         key: macos-arm64
 
-      - name: Build whisper.cpp
-        run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DWHISPER_COREML=1 \
-            -DBUILD_SHARED_LIBS=OFF
-          cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
+  #     - name: Build whisper.cpp
+  #       run: |
+  #         cmake -B build \
+  #           -DCMAKE_BUILD_TYPE=Release \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+  #           -DWHISPER_COREML=1 \
+  #           -DBUILD_SHARED_LIBS=OFF
+  #         cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
 
-      - name: Package binaries
-        run: |
-          mkdir -p dist
+  #     - name: Package binaries
+  #       run: |
+  #         mkdir -p dist
 
-          cp build/bin/whisper-cli dist/whisper-cli-darwin-arm64
-          cp build/bin/whisper-server dist/whisper-server-darwin-arm64
+  #         cp build/bin/whisper-cli dist/whisper-cli-darwin-arm64
+  #         cp build/bin/whisper-server dist/whisper-server-darwin-arm64
           
-          chmod +x dist/whisper-cli-darwin-arm64
-          chmod +x dist/whisper-server-darwin-arm64
+  #         chmod +x dist/whisper-cli-darwin-arm64
+  #         chmod +x dist/whisper-server-darwin-arm64
           
-          cd dist
-          zip whisper-cli-darwin-arm64.zip whisper-cli-darwin-arm64
-          zip whisper-server-darwin-arm64.zip whisper-server-darwin-arm64
+  #         cd dist
+  #         zip whisper-cli-darwin-arm64.zip whisper-cli-darwin-arm64
+  #         zip whisper-server-darwin-arm64.zip whisper-server-darwin-arm64
 
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-cli-darwin-arm64
-          path: dist/whisper-cli-darwin-arm64.zip
+  #     - name: Upload whisper-cli artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-cli-darwin-arm64
+  #         path: dist/whisper-cli-darwin-arm64.zip
 
-      - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-server-darwin-arm64
-          path: dist/whisper-server-darwin-arm64.zip
+  #     - name: Upload whisper-server artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-server-darwin-arm64
+  #         path: dist/whisper-server-darwin-arm64.zip
 
-  build-macos-x64:
-    runs-on: macos-14
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  # build-macos-x64:
+  #   runs-on: macos-14
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: macos-x64
+  #     - name: Setup ccache
+  #       uses: hendrikmuhs/ccache-action@v1.2
+  #       with:
+  #         key: macos-x64
 
-      - name: Build whisper.cpp for x64
-        run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DWHISPER_COREML=1 \
-            -DGGML_NATIVE=OFF \
-            -DBUILD_SHARED_LIBS=OFF
-          cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
+  #     - name: Build whisper.cpp for x64
+  #       run: |
+  #         cmake -B build \
+  #           -DCMAKE_BUILD_TYPE=Release \
+  #           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+  #           -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+  #           -DWHISPER_COREML=1 \
+  #           -DGGML_NATIVE=OFF \
+  #           -DBUILD_SHARED_LIBS=OFF
+  #         cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
 
-      - name: Package binaries
-        run: |
-          mkdir -p dist
+  #     - name: Package binaries
+  #       run: |
+  #         mkdir -p dist
 
-          cp build/bin/whisper-cli dist/whisper-cli-darwin-x64
-          cp build/bin/whisper-server dist/whisper-server-darwin-x64
+  #         cp build/bin/whisper-cli dist/whisper-cli-darwin-x64
+  #         cp build/bin/whisper-server dist/whisper-server-darwin-x64
           
-          chmod +x dist/whisper-cli-darwin-x64
-          chmod +x dist/whisper-server-darwin-x64
+  #         chmod +x dist/whisper-cli-darwin-x64
+  #         chmod +x dist/whisper-server-darwin-x64
           
-          cd dist
-          zip whisper-cli-darwin-x64.zip whisper-cli-darwin-x64
-          zip whisper-server-darwin-x64.zip whisper-server-darwin-x64
+  #         cd dist
+  #         zip whisper-cli-darwin-x64.zip whisper-cli-darwin-x64
+  #         zip whisper-server-darwin-x64.zip whisper-server-darwin-x64
 
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-cli-darwin-x64
-          path: dist/whisper-cli-darwin-x64.zip
+  #     - name: Upload whisper-cli artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-cli-darwin-x64
+  #         path: dist/whisper-cli-darwin-x64.zip
 
-      - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-server-darwin-x64
-          path: dist/whisper-server-darwin-x64.zip
+  #     - name: Upload whisper-server artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-server-darwin-x64
+  #         path: dist/whisper-server-darwin-x64.zip
 
-  build-windows-x64-cpu:
-    runs-on: windows-2022
-    steps:
-      - name: Free up disk space
-        shell: pwsh
-        run: |
-          # Remove unnecessary tools to free up disk space
-          Remove-Item -Recurse -Force "C:\hostedtoolcache\CodeQL" -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force "C:\hostedtoolcache\Java*" -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force "C:\hostedtoolcache\go" -ErrorAction SilentlyContinue
-          Remove-Item -Recurse -Force "C:\hostedtoolcache\Python" -ErrorAction SilentlyContinue
+  # build-windows-x64-cpu:
+  #   runs-on: windows-2022
+  #   steps:
+  #     - name: Free up disk space
+  #       shell: pwsh
+  #       run: |
+  #         # Remove unnecessary tools to free up disk space
+  #         Remove-Item -Recurse -Force "C:\hostedtoolcache\CodeQL" -ErrorAction SilentlyContinue
+  #         Remove-Item -Recurse -Force "C:\hostedtoolcache\Java*" -ErrorAction SilentlyContinue
+  #         Remove-Item -Recurse -Force "C:\hostedtoolcache\go" -ErrorAction SilentlyContinue
+  #         Remove-Item -Recurse -Force "C:\hostedtoolcache\Python" -ErrorAction SilentlyContinue
 
-      - name: Checkout
-        uses: actions/checkout@v6
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Install Ninja
-        run: choco install ninja -y
+  #     - name: Install Ninja
+  #       run: choco install ninja -y
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+  #     - name: Setup MSVC
+  #       uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: windows-x64-cpu
-          variant: sccache
+  #     - name: Setup ccache
+  #       uses: hendrikmuhs/ccache-action@v1.2
+  #       with:
+  #         key: windows-x64-cpu
+  #         variant: sccache
 
-      - name: Build whisper.cpp (CPU-only)
-        shell: cmd
-        run: |
-          cmake -S . -B build -G "Ninja Multi-Config" ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
-            -DBUILD_SHARED_LIBS=OFF ^
-            -DWHISPER_COREML=OFF ^
-            -DGGML_CUDA=OFF ^
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-          cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
+  #     - name: Build whisper.cpp (CPU-only)
+  #       shell: cmd
+  #       run: |
+  #         cmake -S . -B build -G "Ninja Multi-Config" ^
+  #           -DCMAKE_BUILD_TYPE=Release ^
+  #           -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
+  #           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
+  #           -DBUILD_SHARED_LIBS=OFF ^
+  #           -DWHISPER_COREML=OFF ^
+  #           -DGGML_CUDA=OFF ^
+  #           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+  #         cmake --build build --config Release -j %NUMBER_OF_PROCESSORS%
 
-      - name: Package binaries
-        shell: pwsh
-        run: |
-          mkdir dist
+  #     - name: Package binaries
+  #       shell: pwsh
+  #       run: |
+  #         mkdir dist
 
-          Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cpu.exe
-          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cpu.exe
+  #         Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cpu.exe
+  #         Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cpu.exe
           
-          Set-Location dist
-          Compress-Archive -Path whisper-cli-win32-x64-cpu.exe -DestinationPath whisper-cli-win32-x64-cpu.zip
-          Compress-Archive -Path whisper-server-win32-x64-cpu.exe -DestinationPath whisper-server-win32-x64-cpu.zip
+  #         Set-Location dist
+  #         Compress-Archive -Path whisper-cli-win32-x64-cpu.exe -DestinationPath whisper-cli-win32-x64-cpu.zip
+  #         Compress-Archive -Path whisper-server-win32-x64-cpu.exe -DestinationPath whisper-server-win32-x64-cpu.zip
 
-      - name: Upload whisper-cli artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-cli-win32-x64-cpu
-          path: dist/whisper-cli-win32-x64-cpu.zip
+  #     - name: Upload whisper-cli artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-cli-win32-x64-cpu
+  #         path: dist/whisper-cli-win32-x64-cpu.zip
 
-      - name: Upload whisper-server artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: whisper-server-win32-x64-cpu
-          path: dist/whisper-server-win32-x64-cpu.zip
+  #     - name: Upload whisper-server artifact
+  #       uses: actions/upload-artifact@v7
+  #       with:
+  #         name: whisper-server-win32-x64-cpu
+  #         path: dist/whisper-server-win32-x64-cpu.zip
 
   build-windows-x64-cuda:
     runs-on: windows-2022
     strategy:
       matrix:
         # cuda_arch: ["75", "80", "86", "89", "120", "121"]
-        cuda_arch: ["80"]
+        cuda_arch: ["89"]
     steps:
       - name: Free up disk space
         shell: pwsh
@@ -339,30 +339,6 @@ jobs:
         with:
           cuda: '13.2.0'
       
-      - name: Verify CUDA runtime DLLs (auto-detect)
-        shell: pwsh
-        run: |
-          Write-Host "CUDA_PATH: $env:CUDA_PATH"
-      
-          $dllPatterns = @(
-            "cudart64_*.dll",
-            "cublas64_*.dll",
-            "cublasLt64_*.dll"
-          )
-      
-          foreach ($pattern in $dllPatterns) {
-            $found = Get-ChildItem "$env:CUDA_PATH\bin" -Filter $pattern -ErrorAction SilentlyContinue
-      
-            if ($found) {
-              Write-Host "[OK] Found $($found.Name)"
-            } else {
-              Write-Error "[MISSING] No DLL matching $pattern"
-              exit 1
-            }
-          }
-      
-          Write-Host "All required CUDA DLLs are present ✅"
-
       - name: Verify CUDA installation
         run: nvcc --version
 
