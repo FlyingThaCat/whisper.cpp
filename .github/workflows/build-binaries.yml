@@ -401,8 +401,8 @@ jobs:
           $arch = "${{ matrix.cuda_arch }}"
           mkdir dist
 
-          Copy-Item build\bin\Release\whisper-cli.exe    dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
-          Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
+          Copy-Item build\bin\whisper-cli.exe    dist\whisper-cli-win32-x64-cuda-sm${arch}.exe
+          Copy-Item build\bin\whisper-server.exe dist\whisper-server-win32-x64-cuda-sm${arch}.exe
           Copy-Item cuda_dlls\cudart64_13.dll   dist\
           Copy-Item cuda_dlls\cublas64_13.dll   dist\
           Copy-Item cuda_dlls\cublasLt64_13.dll dist\
