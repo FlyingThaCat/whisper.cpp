@@ -338,6 +338,30 @@ jobs:
       - uses: Jimver/cuda-toolkit@v0.2.35
         with:
           cuda: '13.2.0'
+      
+      - name: Verify CUDA runtime DLLs (auto-detect)
+        shell: pwsh
+        run: |
+          Write-Host "CUDA_PATH: $env:CUDA_PATH"
+      
+          $dllPatterns = @(
+            "cudart64_*.dll",
+            "cublas64_*.dll",
+            "cublasLt64_*.dll"
+          )
+      
+          foreach ($pattern in $dllPatterns) {
+            $found = Get-ChildItem "$env:CUDA_PATH\bin" -Filter $pattern -ErrorAction SilentlyContinue
+      
+            if ($found) {
+              Write-Host "[OK] Found $($found.Name)"
+            } else {
+              Write-Error "[MISSING] No DLL matching $pattern"
+              exit 1
+            }
+          }
+      
+          Write-Host "All required CUDA DLLs are present ✅"
 
       - name: Verify CUDA installation
         run: nvcc --version
@@ -354,7 +378,7 @@ jobs:
       - name: Build whisper.cpp with CUDA
         shell: cmd
         run: |
-          cmake -S . -B build -G "Ninja Multi-Config" ^
+          cmake -S . -B build -G Ninja ^
             -DCMAKE_BUILD_TYPE=Release ^
             -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
@@ -385,12 +409,23 @@ jobs:
           Expand-Archive cuda_cudart-windows-x86_64-13.2.51-archive.zip -DestinationPath cuda_cudart
           Expand-Archive libcublas-windows-x86_64-13.2.1.1-archive.zip -DestinationPath libcublas
 
-          # Stage DLLs to a known location
-          New-Item -ItemType Directory -Force -Path cuda_dlls
-          Copy-Item cuda_cudart\bin\x64\cudart64_13.dll cuda_dlls\
-          Copy-Item libcublas\bin\x64\cublas64_13.dll   cuda_dlls\
-          Copy-Item libcublas\bin\x64\cublasLt64_13.dll cuda_dlls\
-
+          # Create destination folder
+          New-Item -ItemType Directory -Force -Path cuda_dlls | Out-Null
+          
+          # Copy required DLLs safely
+          Get-ChildItem -Recurse -Filter cudart64_13.dll | ForEach-Object {
+              Copy-Item $_.FullName -Destination cuda_dlls -Force
+          }
+          
+          Get-ChildItem -Recurse -Filter cublas64_13.dll | ForEach-Object {
+              Copy-Item $_.FullName -Destination cuda_dlls -Force
+          }
+          
+          Get-ChildItem -Recurse -Filter cublasLt64_13.dll | ForEach-Object {
+              Copy-Item $_.FullName -Destination cuda_dlls -Force
+          }
+          
+          # Debug output
           Write-Host "Staged DLLs:"
           Get-ChildItem cuda_dlls | Format-Table Name, Length
 
