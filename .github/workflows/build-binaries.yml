@@ -90,16 +90,16 @@ jobs:
       matrix:
         cuda_arch: ["75", "80", "86", "89", "120", "121"]
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+      # - name: Free Disk Space (Ubuntu)
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: false
+      #     android: true
+      #     dotnet: true
+      #     haskell: true
+      #     large-packages: true
+      #     docker-images: true
+      #     swap-storage: true
   
       - name: Checkout code
         uses: actions/checkout@v6
@@ -127,6 +127,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF \
             -DWHISPER_COREML=OFF \
             -DGGML_CUDA=ON \
+            -DCUDA_RUNTIME=Static \
             -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}"
           cmake --build build --config Release -j $(nproc)
   
