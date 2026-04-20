@@ -387,19 +387,9 @@ jobs:
 
           # Create destination folder
           New-Item -ItemType Directory -Force -Path cuda_dlls | Out-Null
-          
-          # Copy required DLLs safely
-          Get-ChildItem -Recurse -Filter cudart64_13.dll | ForEach-Object {
-              Copy-Item $_.FullName -Destination cuda_dlls -Force
-          }
-          
-          Get-ChildItem -Recurse -Filter cublas64_13.dll | ForEach-Object {
-              Copy-Item $_.FullName -Destination cuda_dlls -Force
-          }
-          
-          Get-ChildItem -Recurse -Filter cublasLt64_13.dll | ForEach-Object {
-              Copy-Item $_.FullName -Destination cuda_dlls -Force
-          }
+          Copy-Item (Get-ChildItem cuda_cudart -Recurse -Filter cudart64_13.dll | Select-Object -First 1) -Destination cuda_dlls
+          Copy-Item (Get-ChildItem libcublas -Recurse -Filter cublas64_13.dll | Select-Object -First 1) -Destination cuda_dlls
+          Copy-Item (Get-ChildItem libcublas -Recurse -Filter cublasLt64_13.dll | Select-Object -First 1) -Destination cuda_dlls
           
           # Debug output
           Write-Host "Staged DLLs:"
