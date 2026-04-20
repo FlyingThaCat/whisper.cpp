@@ -128,6 +128,7 @@ jobs:
             -DWHISPER_COREML=OFF \
             -DGGML_CUDA=ON \
             -DCUDA_RUNTIME=Static \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Static \
             -DCMAKE_CUDA_ARCHITECTURES="${{ matrix.cuda_arch }}"
           cmake --build build --config Release -j $(nproc)
   
