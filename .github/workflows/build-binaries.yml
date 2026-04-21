@@ -9,9 +9,6 @@ on:
         type: string
 permissions:
   contents: write
-env:
-  # https://developer.nvidia.com/cuda/gpus
-  CUDA_ARCHITECTURES: "75;80;86;89;120;121"
 
 jobs:
   build-linux-x64-cpu:
@@ -67,39 +64,35 @@ jobs:
           cp build/bin/whisper-server dist/whisper-server-linux-x64-cpu
           chmod +x dist/whisper-server-linux-x64-cpu
 
-          cd dist
-
-          zip whisper-cli-linux-x64-cpu.zip whisper-cli-linux-x64-cpu
-          zip whisper-server-linux-x64-cpu.zip whisper-server-linux-x64-cpu
-
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-linux-x64-cpu
-          path: dist/whisper-cli-linux-x64-cpu.zip
+          path: dist/whisper-cli-linux-x64-cpu
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-linux-x64-cpu
-          path: dist/whisper-server-linux-x64-cpu.zip
+          path: dist/whisper-server-linux-x64-cpu
 
   build-linux-x64-cuda:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
+        # https://developer.nvidia.com/cuda/gpus
         cuda_arch: ["75", "80", "86", "89", "120", "121"]
     steps:
-      # - name: Free Disk Space (Ubuntu)
-      #   uses: jlumbroso/free-disk-space@main
-      #   with:
-      #     tool-cache: false
-      #     android: true
-      #     dotnet: true
-      #     haskell: true
-      #     large-packages: true
-      #     docker-images: true
-      #     swap-storage: true
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
   
       - name: Checkout code
         uses: actions/checkout@v6
@@ -139,21 +132,18 @@ jobs:
           cp build/bin/whisper-server dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
           chmod +x dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
           chmod +x dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          cd dist
-          zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
   
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+          path: dist/whisper-cli-linux-x64-cuda-sm${{ matrix.cuda_arch }}
   
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+          path: dist/whisper-server-linux-x64-cuda-sm${{ matrix.cuda_arch }}
     
   build-macos-arm64:
     runs-on: macos-14
@@ -186,21 +176,17 @@ jobs:
           chmod +x dist/whisper-cli-darwin-arm64
           chmod +x dist/whisper-server-darwin-arm64
           
-          cd dist
-          zip whisper-cli-darwin-arm64.zip whisper-cli-darwin-arm64
-          zip whisper-server-darwin-arm64.zip whisper-server-darwin-arm64
-
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-darwin-arm64
-          path: dist/whisper-cli-darwin-arm64.zip
+          path: dist/whisper-cli-darwin-arm64
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-darwin-arm64
-          path: dist/whisper-server-darwin-arm64.zip
+          path: dist/whisper-server-darwin-arm64
 
   build-macos-x64:
     runs-on: macos-14
@@ -235,21 +221,17 @@ jobs:
           chmod +x dist/whisper-cli-darwin-x64
           chmod +x dist/whisper-server-darwin-x64
           
-          cd dist
-          zip whisper-cli-darwin-x64.zip whisper-cli-darwin-x64
-          zip whisper-server-darwin-x64.zip whisper-server-darwin-x64
-
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-darwin-x64
-          path: dist/whisper-cli-darwin-x64.zip
+          path: dist/whisper-cli-darwin-x64
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-darwin-x64
-          path: dist/whisper-server-darwin-x64.zip
+          path: dist/whisper-server-darwin-x64
 
   build-windows-x64-cpu:
     runs-on: windows-2022
@@ -299,28 +281,24 @@ jobs:
           Copy-Item build\bin\Release\whisper-cli.exe dist\whisper-cli-win32-x64-cpu.exe
           Copy-Item build\bin\Release\whisper-server.exe dist\whisper-server-win32-x64-cpu.exe
           
-          Set-Location dist
-          Compress-Archive -Path whisper-cli-win32-x64-cpu.exe -DestinationPath whisper-cli-win32-x64-cpu.zip
-          Compress-Archive -Path whisper-server-win32-x64-cpu.exe -DestinationPath whisper-server-win32-x64-cpu.zip
-
       - name: Upload whisper-cli artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-win32-x64-cpu
-          path: dist/whisper-cli-win32-x64-cpu.zip
+          path: dist/whisper-cli-win32-x64-cpu.exe
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-win32-x64-cpu
-          path: dist/whisper-server-win32-x64-cpu.zip
+          path: dist/whisper-server-win32-x64-cpu.exe
 
   build-windows-x64-cuda:
     runs-on: windows-2022
     strategy:
       matrix:
+        # https://developer.nvidia.com/cuda/gpus
         cuda_arch: ["75", "80", "86", "89", "120", "121"]
-        # cuda_arch: ["89"]
     steps:
       - name: Free up disk space
         shell: pwsh
@@ -409,23 +387,30 @@ jobs:
           Copy-Item cuda_dlls\cublas64_13.dll   dist\
           Copy-Item cuda_dlls\cublasLt64_13.dll dist\
 
+          
           Set-Location dist
+
+          mkdir whisper-cli
+          mkdir whisper-server
+
           $dlls = @("cudart64_13.dll", "cublas64_13.dll", "cublasLt64_13.dll")
 
           $files = @("whisper-cli-win32-x64-cuda-sm${arch}.exe") + $dlls
-          Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
+          Copy-Item $files -Destination "whisper-cli"
+          # Compress-Archive -Path $files -DestinationPath whisper-cli-win32-x64-cuda-sm${arch}.zip
 
           $files = @("whisper-server-win32-x64-cuda-sm${arch}.exe") + $dlls
-          Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
+          Copy-Item $files -Destination "whisper-server"
+          # Compress-Archive -Path $files -DestinationPath whisper-server-win32-x64-cuda-sm${arch}.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: whisper-cli-win32-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-cli-win32-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+          path: dist/whisper-cli
 
       - name: Upload whisper-server artifact
         uses: actions/upload-artifact@v7
         with:
           name: whisper-server-win32-x64-cuda-sm${{ matrix.cuda_arch }}
-          path: dist/whisper-server-win32-x64-cuda-sm${{ matrix.cuda_arch }}.zip
+          path: dist/whisper-server
