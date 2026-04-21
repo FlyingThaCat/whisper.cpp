@@ -7,7 +7,7 @@ on:
         description: 'Version tag for the release (e.g., v1.0.0)'
         required: true
         type: string
-        
+
       channel:
           description: 'Release channel'
           required: true
@@ -450,6 +450,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
+          prerelease: ${{ inputs.channel == 'insider' }}
+          name: ${{ inputs.channel == 'insider' && format('{0} (Insider)', inputs.version) || inputs.version }}
           files: |
             artifacts/*
             artifacts/SHA256SUMS
