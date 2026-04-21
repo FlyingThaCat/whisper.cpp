@@ -2,11 +2,20 @@ name: Build Binaries for Whisper.cpp
 
 on:
   workflow_dispatch:
-   inputs:
+    inputs:
       version:
         description: 'Version tag for the release (e.g., v1.0.0)'
         required: true
         type: string
+        
+      channel:
+          description: 'Release channel'
+          required: true
+          type: choice
+          options:
+            - release
+            - insider
+
 permissions:
   contents: write
 
@@ -414,3 +423,33 @@ jobs:
         with:
           name: whisper-server-win32-x64-cuda-sm${{ matrix.cuda_arch }}
           path: dist/whisper-server
+  
+  release:
+    needs:
+      - build-linux-x64-cpu
+      - build-linux-x64-cuda
+      - build-macos-arm64
+      - build-macos-x64
+      - build-windows-x64-cpu
+      - build-windows-x64-cuda
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true   # flattens into one dir
+      
+      - name: Generate SHA256SUMS
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS   # sanity check in logs
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            artifacts/*
+            artifacts/SHA256SUMS
